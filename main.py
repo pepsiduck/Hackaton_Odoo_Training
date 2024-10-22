@@ -1,9 +1,14 @@
 from typing import Annotated
+
+import authentification
+
 from fastapi import FastAPI, Request, Form, Depends, Response
 from fastapi.responses import RedirectResponse
 from jinja2_fragments.fastapi import Jinja2Blocks
 import sqlite3
 import hashlib
+
+
 
 crypt = hashlib.new('sha256')
 
@@ -14,6 +19,10 @@ templates = Jinja2Blocks(directory="templates")
 db_connection = sqlite3.connect("USERS")
 
 cur = db_connection.cursor()
+
+@app.exception_handler(authentification.RequiresLoginException)
+async def exception_handler(request: Request, exc: authentification.RequiresLoginException) -> Response:
+    return RedirectResponse("/login")
 
 @app.get("/")
 async def root(request: Request):
@@ -43,19 +52,21 @@ async def post_login(request: Request, response:Response, username:Annotated[str
             "request": request,
             "login_error" : "Account does not exists"
         })
-    
-    crypt.update(password.encode())
-    if(rows[0] != crypt.hexdigest()):
+
+    if(rows[0] != hashlib.sha256(password.encode()).hexdigest()):
         return templates.TemplateResponse(name="login.jinja2", context = {
             "request": request,
             "login_error" : "Password is not correct"
         })
     
-
-    return templates.TemplateResponse(name="login.jinja2", context = {
+    ret = templates.TemplateResponse(name="login.jinja2", context = {
         "request": request,
         "login_error" : "Logined"
     })
+
+    ret.set_cookie("username", authentification.to_token(username))
+
+    return ret
 
 @app.post("/signup")
 async def post_login(request: Request, response:Response, username:Annotated[str, Form()], password:Annotated[str, Form()], password_again:Annotated[str, Form()]):
@@ -81,9 +92,9 @@ async def post_login(request: Request, response:Response, username:Annotated[str
             "creation_error": "Account already created"
         })
 
-    crypt.update(password.encode())
+    password_db = hashlib.sha256(password.encode()).hexdigest()
 
-    cur.execute("""INSERT INTO user_info (username, password) VALUES ((:username), (:password));""",{'username' : username, 'password' : crypt.hexdigest()})
+    cur.execute("""INSERT INTO user_info (username, password) VALUES ((:username), (:password));""",{'username' : username, 'password' : password_db})
     db_connection.commit()
     
     return templates.TemplateResponse(name="login.jinja2", context={
@@ -91,4 +102,11 @@ async def post_login(request: Request, response:Response, username:Annotated[str
             "message": "Account successfully created"
         })
 
-    
+@app.get("/menu")
+async def login(request: Request):
+
+    username = authentification.get_user(request)
+
+    return templates.TemplateResponse(name="menu.jinja2", context = {
+        "request": request,
+    })    
