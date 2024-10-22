@@ -109,4 +109,10 @@ async def login(request: Request):
 
     return templates.TemplateResponse(name="menu.jinja2", context = {
         "request": request,
-    })    
+    })
+
+@app.post("/logout")
+async def post_logout(request: Request, response:Response):
+    response = RedirectResponse("/home", status_code=303)
+    response.delete_cookie("username")
+    return response
