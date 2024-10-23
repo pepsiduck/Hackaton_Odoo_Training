@@ -4,6 +4,7 @@ import authentification
 
 from fastapi import FastAPI, Request, Form, Depends, Response
 from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from jinja2_fragments.fastapi import Jinja2Blocks
 import sqlite3
 import hashlib
@@ -13,6 +14,8 @@ import hashlib
 crypt = hashlib.new('sha256')
 
 app = FastAPI()
+
+app.mount("/images", StaticFiles(directory="images"), name='images')
 
 templates = Jinja2Blocks(directory="templates")
 
@@ -109,10 +112,12 @@ async def login(request: Request):
 
     return templates.TemplateResponse(name="menu.jinja2", context = {
         "request": request,
+        "username": username
     })
 
 @app.post("/logout")
 async def post_logout(request: Request, response:Response):
-    response = RedirectResponse("/home", status_code=303)
+    response = RedirectResponse("/", status_code=303)
     response.delete_cookie("username")
     return response
+

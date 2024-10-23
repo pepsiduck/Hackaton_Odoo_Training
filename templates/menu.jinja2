@@ -1,6 +1,13 @@
 {% extends "base.jinja2"%}
 {% block content %}
 
-<p>Coucou</p>
+<p>Coucou {{username}}</p>
 
+<img src="{{ url_for('images', path='TEST.jpg') }}" />   
+
+<form action="/logout" method="POST" >
+    <button type="submit">
+        Jaaj
+    </button> 
+</form>
 {% endblock %}
