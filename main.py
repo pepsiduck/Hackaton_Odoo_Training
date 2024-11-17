@@ -9,13 +9,12 @@ from jinja2_fragments.fastapi import Jinja2Blocks
 import sqlite3
 import hashlib
 
-
-
 crypt = hashlib.new('sha256')
 
 app = FastAPI()
 
 app.mount("/images", StaticFiles(directory="images"), name='images')
+app.mount("/javascript", StaticFiles(directory="javascript"), name='javascript')
 
 templates = Jinja2Blocks(directory="templates")
 
